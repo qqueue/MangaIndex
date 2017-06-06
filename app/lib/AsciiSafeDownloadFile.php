@@ -1,5 +1,8 @@
 <?php
 
+namespace App\Lib;
+
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\File;
 
 /*
@@ -9,15 +12,17 @@ use Symfony\Component\HttpFoundation\File\File;
     modifying the framework itself.
 */
 
-class AsciiSafeDownloadFile extends File {
+class AsciiSafeDownloadFile extends File
+{
 
     /*
         Take the original filename and ASCII-fy it
     */
-    public function getFilename() {
+    public function getFilename()
+    {
         $orig = parent::getFilename();
         $orig = str_replace('%', '', $orig);
+        // Now uses the stringy lib not patchwork - should be ok though?
         return Str::ascii($orig);
     }
-
 }

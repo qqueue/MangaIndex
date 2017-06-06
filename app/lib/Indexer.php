@@ -1,8 +1,14 @@
 <?php
 
-class Indexer {
+namespace App\Lib;
 
-    public static function index(Path $path, $levels = null, &$count = 0) {
+use Illuminate\Support\Facades\Log;
+
+class Indexer
+{
+
+    public static function index(Path $path, $levels = null, &$count = 0)
+    {
         printf("Indexing: %s\n", $path->getRelative());
         if (preg_match("/^\.in\./", $path->getFilename())) {
             return;
@@ -12,45 +18,42 @@ class Indexer {
             $record = $path->loadRecord();
 
             // if this path does not exist, and we have a record then delete it
-            if(!$path->exists()) {
-                if($record) {
+            if (!$path->exists()) {
+                if ($record) {
                     $record->delete();
                 }
 
                 return;
             }
 
-            if(!$record) {
+            if (!$record) {
                 // none exists, create it
                 $path->loadCreateRecord();
                 $count++;
-            }
-            else {
+            } else {
                 // it exists, check if it needs updating
-                if($record->checkUpdate($path)) {
+                if ($record->checkUpdate($path)) {
                     $count++;
                 }
             }
 
             // index children
-            if($levels > 0 || $levels === null) {
-                if($levels !== null) {
+            if ($levels > 0 || $levels === null) {
+                if ($levels !== null) {
                     $levels--;
                 }
 
-                if($path->isDir()) {
+                if ($path->isDir()) {
                     $children = $path->getChildren();
 
-                    foreach($children as $child) {
+                    foreach ($children as $child) {
                         self::index($child, $levels, $count);
                     }
                 }
             }
-        }
-        catch(Exception $e) {
+        } catch (Exception $e) {
             print((string)$e);
-            Log::error($e, array('path' => $path->getRelative()));
+            Log::error($e, ['path' => $path->getRelative()]);
         }
     }
-
 }

@@ -2,24 +2,27 @@
 
 namespace Archive;
 
-class RarArchive implements Archive {
+class RarArchive implements Archive
+{
 
     protected $archive;
 
-    public function __construct(\Path $path) {
+    public function __construct(\Path $path)
+    {
         $this->archive = \RarArchive::open($path->getPathName());
 
-        if(!$this->archive) {
+        if (!$this->archive) {
             throw new Exception('Failed to open archive');
         }
     }
 
-    public function getFiles() {
+    public function getFiles()
+    {
         $entries = $this->archive->getEntries();
 
-        $files = array();
-        foreach($entries as $entry) {
-            if(!$entry->isDirectory()) {
+        $files = [];
+        foreach ($entries as $entry) {
+            if (!$entry->isDirectory()) {
                 $files[] = $entry->getName();
             }
         }
@@ -30,20 +33,20 @@ class RarArchive implements Archive {
         return $files;
     }
 
-    public function getEntryStream($entryName) {
+    public function getEntryStream($entryName)
+    {
         $entry = $this->archive->getEntry($entryName);
 
-        if(!$entry) {
+        if (!$entry) {
             throw new Exception('Failed to find entry for file: '.$entryName);
         }
 
         $stream = $entry->getStream();
 
-        if(!$stream) {
+        if (!$stream) {
             throw new Exception('Failed to get stream for file: '.$entryName);
         }
 
         return $stream;
     }
-    
 }
