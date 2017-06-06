@@ -1,14 +1,20 @@
 <?php
 
-use Foolz\SphinxQL\SphinxQL;
+namespace App\Lib;
+
+use App\PathRecord;
 use Foolz\SphinxQL\Connection;
 use Foolz\SphinxQL\Helper;
+use Foolz\SphinxQL\SphinxQL;
+use Illuminate\Support\Facades\URL;
 
-class Search {
+class Search
+{
     
     const SEARCH_THRESHOLD = 6;
     
-    public static function searchPaths($keyword, &$count) {
+    public static function searchPaths($keyword, &$count)
+    {
         $conn = self::getSphinxConnection();
 
         $query = SphinxQL::create($conn)
@@ -29,67 +35,70 @@ class Search {
 
         $count = $meta['total_found'];
 
-        if(count($ids) > 0) {
+        if (count($ids) > 0) {
             $records = PathRecord::whereIn('id', $ids)->get();
 
             return $records;
-        }
-        else {
-            return array();
+        } else {
+            return [];
         }
     }
 
-    protected static function getSphinxConnection() {
+    protected static function getSphinxConnection()
+    {
         $conn = new Connection();
-        $sphConfig = Config::get('sphinx.ql_connection');
+        $sphConfig = config('sphinx.ql_connection');
         $conn->setParams($sphConfig);
         return $conn;
     }
 
-    protected static function getIds($result) {
-        $ids = array();
+    protected static function getIds($result)
+    {
+        $ids = [];
 
-        foreach($result as $row) {
+        foreach ($result as $row) {
             $ids[] = $row['id'];
         }
 
         return $ids;
     }
 
-    protected static function sortMeta($meta) {
-        $result = array();
+    protected static function sortMeta($meta)
+    {
+        $result = [];
 
-        foreach($meta as $row) {
+        foreach ($meta as $row) {
             $result[$row['Variable_name']] = $row['Value'];
         }
 
         return $result;
     }
 
-    public static function url($keyword, $type = null) {
+    public static function url($keyword, $type = null)
+    {
         $keyword = strtolower($keyword);
         $keyword = str_replace('/', '%2F', $keyword); // URL::route() will not encode forward slashes
 
-        if($type) {
-            return URL::route('searchKeywordType', array('type' => $type, 'keyword' => $keyword));
-        }
-        else {
-            return URL::route('search', array('keyword' => $keyword));
+        if ($type) {
+            return URL::route('searchKeywordType', ['type' => $type, 'keyword' => $keyword]);
+        } else {
+            return URL::route('search', ['keyword' => $keyword]);
         }
     }
 
-    public static function byImage($inputFilePath) {
+    public static function byImage($inputFilePath)
+    {
         $binaryHash = sha1_file($inputFilePath);
         $phash = ph_dct_imagehash($inputFilePath);
 
-        if(!$phash) {
+        if (!$phash) {
             return false;
         }
 
-        $results = ImageHash::whereRaw('binary_hash = ? or bit_count(phash ^ ?) <= ?', array($binaryHash, $phash, self::SEARCH_THRESHOLD))->get();
-        $paths = array();
+        $results = ImageHash::whereRaw('binary_hash = ? or bit_count(phash ^ ?) <= ?', [$binaryHash, $phash, self::SEARCH_THRESHOLD])->get();
+        $paths = [];
 
-        foreach($results as $hash) {
+        foreach ($results as $hash) {
             $record = $hash->pathRecord;
             $path = $record->getPath();
             $paths[$record->id] = $path;
@@ -98,7 +107,8 @@ class Search {
         return $paths;
     }
 
-    public static function suggest($keyword) {
+    public static function suggest($keyword)
+    {
         $conn = self::getSphinxConnection();
 
         $query = SphinxQL::create($conn)
@@ -111,9 +121,9 @@ class Search {
 
         $result = $query->execute();
 
-        $suggestions = array();
-        foreach($result as $row) {
-            $suggestions[] = array('value' => $row['keyword']);
+        $suggestions = [];
+        foreach ($result as $row) {
+            $suggestions[] = ['value' => $row['keyword']];
         }
 
         return $suggestions;

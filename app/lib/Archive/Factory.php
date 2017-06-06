@@ -2,12 +2,14 @@
 
 namespace Archive;
 
-class Factory {
+class Factory
+{
 
-    public static function open(\Path $path) {
+    public static function open(\Path $path)
+    {
         $ext = $path->getExtension();
 
-        switch($ext) {
+        switch ($ext) {
             case 'zip':
             case 'cbz':
                 return new ZipArchive($path);
@@ -18,5 +20,4 @@ class Factory {
                 throw new \Exception('Invalid file type: '.$ext);
         }
     }
-
 }

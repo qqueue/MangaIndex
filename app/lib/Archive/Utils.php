@@ -2,21 +2,22 @@
 
 namespace Archive;
 
-class Utils {
+class Utils
+{
 
-    public static function filterImageFiles($files) {
-        $result = array();
+    public static function filterImageFiles($files)
+    {
+        $result = [];
 
-        foreach($files as $file) {
+        foreach ($files as $file) {
             $ext = pathinfo($file, PATHINFO_EXTENSION);
             $ext = strtolower($ext);
 
-            if(in_array($ext, array('jpg', 'jpeg', 'png'))) {
+            if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
                 $result[] = $file;
             }
         }
 
         return $result;
     }
-
 }

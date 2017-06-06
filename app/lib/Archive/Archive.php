@@ -2,10 +2,10 @@
 
 namespace Archive;
 
-interface Archive {
+interface Archive
+{
 
     public function getFiles();
 
     public function getEntryStream($entryName);
-
 }
