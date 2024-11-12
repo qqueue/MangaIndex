@@ -2,106 +2,62 @@
 
 class MangaUpdates {
 
-    const BASE_URL = 'https://www.mangaupdates.com/series.html?';
+    const BASE_URL = 'https://api.mangaupdates.com/v1/series/';
     const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36';
-    
+
     public static function getManga($muId) {
-        $url = self::BASE_URL.http_build_query(array('id' => $muId));
-        $html = self::getPage($url);
-        $doc = phpQuery::newDocumentHTML($html);
+        $url = self::BASE_URL . urlencode($muId);
+        $content = self::getPage($url);
+        $doc = json_decode($content);
 
-        if(!$doc) {
-            return false;
-        }
-
-        // check page is valid
-        if($doc->find('#main_content .releasestitle')->length() === 0) {
+        if(!$content) {
             return false;
         }
 
         $ret = new stdClass();
 
-        $ret->name = $doc->find('.releasestitle')->text();
+        $ret->name = $doc->title;
 
-        $imgUrl = $doc->find('.sContent img')->attr('src');
+        $imgUrl = $doc->image->url->original;
         $image = self::saveImage($imgUrl);
         if($image) {
             $ret->image = $image;
         }
 
-        $catHeaders = $doc->find('.sCat');
-        foreach($catHeaders as $i => $e) {
-            $cat = $catHeaders->eq($i)->find('b')->text();
-            $content = $catHeaders->eq($i)->next('.sContent');
+        $ret->description = $doc->description;
+        $ret->origin_status = $doc->status;
+        $ret->scan_status = $doc->completed ? 'Yes' : 'No';
 
-            if($cat === 'Description') {
-                $ret->description = trim($content->text());
-            }
-            elseif($cat === 'Status in Country of Origin') {
-                $ret->origin_status = trim($content->text());
-            }
-            elseif($cat === 'Completely Scanlated?') {
-                $ret->scan_status = trim($content->text());
-            }
-            elseif($cat === 'Genre') {
-                $genres = self::getManyContent($content, 'a[href*="genresearch"]');
-                $ret->genres = $genres;
-            }
-            elseif($cat === 'Categories') {
-                $categories = self::getManyContent($content, 'a[href*="category="]');
-                $ret->categories = $categories;
-            }
-            elseif($cat === 'Author(s)') {
-                $authors = self::getManyContent($content, 'a[href*="authors"]');
-                $ret->authors = $authors;
-            }
-            elseif($cat === 'Artist(s)') {
-                $artists = self::getManyContent($content, 'a[href*="authors"]');
-                $ret->artists = $artists;
-            }
-            elseif($cat === 'Year') {
-                $ret->year = trim($content->text());
-            }
-            elseif($cat === 'Associated Names') {
-                $titles = explode('<br>', utf8_encode($content->html()));
+        $ret->genres = [];
+        foreach($doc->genres as $g) {
+            $ret->genres[] = $g->genre;
+        }
 
-                foreach($titles as $index => $title) {
-                    $title = html_entity_decode($title);
-                    $title = trim($title);
+        $ret->categories = [];
+        foreach($doc->categories as $c) {
+            $ret->categories[] = $c->category;
+        }
 
-                    if($title) {
-                        $titles[$index] = $title;
-                    }
-                    else {
-                        unset($titles[$index]);
-                    }
-                }
+        $ret->authors = [];
+        $ret->artists = [];
+        foreach($doc->authors as $a) {
+            if ($a->type === "Author") $ret->authors[] = $a->name;
+            if ($a->type === "Artist") $ret->artists[] = $a->name;
+        }
 
-                $ret->altTitles = $titles;
-            }
-            elseif($cat === 'Related Series') {
-                $html = $content->html();
-                $lines = explode('<br>', $html);
+        $ret->year = $doc->year;
 
-                $ret->related = array();
-                foreach($content->contents() as $node) {
-                    if($node instanceof DOMElement) {
-                        $href = $node->getAttribute('href');
-                        if(preg_match('/^series\\.html\\?id=(\\d+)$/', $href, $matches)) {
-                            $muId = $matches[1];
-                            $type = null;
+        $ret->altTitles = [];
+        foreach($doc->associated as $t) {
+            $ret->altTitles[] = $t->title;
+        }
 
-                            // the relation type text is a standalone text node
-                            $next = $node->nextSibling;
-                            if($next instanceof DOMText) {
-                                $type = trim($next->wholeText, ' ()');
-                            }
-
-                            $ret->related[$muId.'-'.$type] = array('muId' => $muId, 'type' => $type);
-                        }
-                    }
-                }
-            }
+        $ret->related = [];
+        foreach($doc->related_series as $s) {
+            $ret->related[] = [
+                'muId' => $s->related_series_id,
+                'type' => $s->relation_type,
+            ];
         }
 
         return $ret;
@@ -124,16 +80,6 @@ class MangaUpdates {
 
             return $image;
         }
-    }
-
-    protected static function getManyContent($content, $selector) {
-        $ret = array();
-        $elems = $content->find($selector);
-        foreach($elems as $i => $elem) {
-            $ret[] = trim($elems->eq($i)->text());
-        }
-
-        return $ret;
     }
 
     protected static function getPage($url) {

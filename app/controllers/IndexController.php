@@ -168,7 +168,7 @@ class IndexController extends BaseController {
             }
             elseif($muId) {
                 // get series
-                $series = Series::getCreateFromMuId($muId);
+                $series = Series::getCreateFromMuId(base_convert($muId, 36, 10));
                 if(!$series) {
                     Session::flash('error', 'Failed to find series for MU ID');
                     return Redirect::back();

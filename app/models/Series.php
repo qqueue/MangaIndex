@@ -144,7 +144,7 @@ class Series extends Eloquent {
     }
 
     public function getExternalUrl() {
-        return 'https://www.mangaupdates.com/series.html?id='.$this->mu_id;
+        return 'https://www.mangaupdates.com/series/' . base_convert($this->mu_id, 10, 36);
     }
 
     public function getGroupedStaff() {
