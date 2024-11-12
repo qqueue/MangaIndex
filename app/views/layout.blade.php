@@ -99,9 +99,8 @@
         @show
 
         <footer>
-            {{{ $statTotalSize }}} used<br/>
+            {{{ $statTotalSize }}} used, {{{ DisplaySize::format(disk_free_space(Config::get('app.manga_path')), 2) }}} free<br/>
             #madokami @ rizon<br/>
-            <a href="https://fufufu.moe/a/" target="_blank"><img title=fufufu.moe src=/img/fu3.png></a>
         </footer>
     @show
 
